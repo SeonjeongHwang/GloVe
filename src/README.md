@@ -6,6 +6,7 @@ The four main tools in this package are:
 
 #### 1) vocab_count
 This tool requires an input corpus that should already consist of whitespace-separated tokens. Use something like the [Stanford Tokenizer](https://nlp.stanford.edu/software/tokenizer.html) first on raw text. From the corpus, it constructs unigram counts from a corpus, and optionally thresholds the resulting vocabulary based on total vocabulary size or minimum frequency count.
+
 문장 구분 없이 input file 내의 모든 단어들에 대한 빈도수 계산
 
 #### 2) cooccur
