@@ -39,7 +39,7 @@ typedef struct vocabulary {
     long long count;
 } VOCAB;
 
-//각 해시값에 해당되는 배열 head에 linked list로 같은 해시값을 같는 단어들이 연결되어있는 
+//각 해시값에 해당되는 배열 head에 linked list로 같은 해시값을 같는 단어들이 연결되어있는 테이블 
 typedef struct hashrec {
     char *word;
     long long count;
@@ -60,7 +60,7 @@ int scmp( char *s1, char *s2 ) {
 //아니면 단어의 차이값 
 
 /* Vocab frequency comparison; break ties alphabetically */
-int CompareVocabTie(const void *a, const void *b) {
+int CompareVocabTie(const void *a, const void *b) { //호춝 코드(219)
     long long c;
     if ( (c = ((VOCAB *) b)->count - ((VOCAB *) a)->count) != 0) return ( c > 0 ? 1 : -1 ); //b가 a보다 더 크면 1, 아니면 -1 반환
     else return (scmp(((VOCAB *) a)->word,((VOCAB *) b)->word)); //a가 더 먼저 나오면 음의 값을, b가 더 먼저 나오면 양의 값을, 같으면 0 
@@ -69,7 +69,7 @@ int CompareVocabTie(const void *a, const void *b) {
 }
 
 /* Vocab frequency comparison; no tie-breaker */
-int CompareVocab(const void *a, const void *b) { //호출 코드(216)
+int CompareVocab(const void *a, const void *b) { //호출 코드(217)
     long long c;
     if ( (c = ((VOCAB *) b)->count - ((VOCAB *) a)->count) != 0) return ( c > 0 ? 1 : -1 ); //b가 a보다 크면 1, 아니면 -1 반환
     else return 0; //같으면 0 반환
@@ -96,7 +96,7 @@ HASHREC ** inithashtable() {
 }
 
 /* Search hash table for given string, insert if not found */
-void hashinsert(HASHREC **ht, char *w) { //호출 코드(188)
+void hashinsert(HASHREC **ht, char *w) { //호출 코드(192)
     HASHREC     *htmp, *hprv; //htmp: 현재 노드, hprv: 이전 노드
     unsigned int hval = HASHFN(w, TSIZE, SEED); // 해당 단어의 해시값 생성(bitwisehash 사용)
     
@@ -137,7 +137,7 @@ void hashinsert(HASHREC **ht, char *w) { //호출 코드(188)
    still little to no harm will be done for other encodings like iso-8859-1.
    (This function appears identically copied in vocab_count.c and cooccur.c.)
  */
-int get_word(char *word, FILE *fin) { //호출 코드(182)
+int get_word(char *word, FILE *fin) { //호출 코드(186)
     int i = 0, ch;
     for ( ; ; ) {
         ch = fgetc(fin); //character 단위로 읽음
@@ -183,7 +183,7 @@ int get_counts() { //main에서
     // sprintf(format,"%%%ds",MAX_STRING_LENGTH);
     while ( ! feof(fid)) {
         // Insert all tokens into hashtable
-        int nl = get_word(str, fid); //word 하나를 읽었으면 0, 못 읽었으면 1/ str에 한 단어를 담아 
+        int nl = get_word(str, fid); //word 하나를 읽었으면 0, 못 읽었으면 1 / str에 한 단어를 
         if (nl) continue; // just a newline marker or feof 
         if (strcmp(str, "<unk>") == 0) { //<unk>가 corpus에 있으면 안된다는 뜻
             fprintf(stderr, "\nError, <unk> vector found in corpus.\nPlease remove <unk>s from your corpus (e.g. cat text8 | sed -e 's/<unk>/<raw_unk>/g' > text8.new)");
@@ -215,7 +215,7 @@ int get_counts() { //main에서
         // If the vocabulary exceeds limit, first sort full vocab by frequency without alphabetical tie-breaks.
         // This results in pseudo-random ordering for words with same frequency, so that when truncated, the words span whole alphabet
         qsort(vocab, j, sizeof(VOCAB), CompareVocab); //빈도 순으로 내림차순 정렬
-    else max_vocab = j; //기존 max보다 j가 작으면 max값을 j로
+    else max_vocab = j; //기존 max보다 j가 작으면 max값을 j로 설정
     qsort(vocab, max_vocab, sizeof(VOCAB), CompareVocabTie); //After (possibly) truncating, sort (possibly again), breaking ties alphabetically
     //빈도 수가 적은 단어들은 잘라버림(max를 넘는 부분부터 사용 안함)
     
@@ -234,7 +234,7 @@ int get_counts() { //main에서
             if (verbose > 0) fprintf(stderr, "Truncating vocabulary at min count %lld.\n",min_count);
             break;
         } //사용자가 설정한 min_count보다 빈도수가 작은 단어들은 고려하지 않음.
-        printf("%s %lld\n",vocab[i].word,vocab[i].count); //=>max_count보다 빈도수가 큰 단어-빈도수를 output file에 
+        printf("%s %lld\n",vocab[i].word,vocab[i].count); //=>max_count보다 빈도수가 큰 단어-빈도수를 output file에 저장
     }
     
     if (i == max_vocab && max_vocab < j) if (verbose > 0) fprintf(stderr, "Truncating vocabulary at size %lld.\n", max_vocab);
@@ -242,7 +242,7 @@ int get_counts() { //main에서
     return 0;
 }
 
-int find_arg(char *str, int argc, char **argv) {//main에서 호출, 입력 인자를 
+int find_arg(char *str, int argc, char **argv) {//main에서 호출, 입력 인자를 확인함
     int i;
     for (i = 1; i < argc; i++) {
         if (!scmp(str, argv[i])) {
