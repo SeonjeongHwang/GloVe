@@ -1,4 +1,4 @@
-## GloVe 코드 
+## GloVe 코드 설명 (한국어) 
 
 
 ## GloVe: Global Vectors for Word Representation
