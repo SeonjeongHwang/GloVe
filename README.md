@@ -1,3 +1,6 @@
+## GloVe 코드 
+
+
 ## GloVe: Global Vectors for Word Representation
 
 
