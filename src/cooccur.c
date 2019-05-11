@@ -185,8 +185,8 @@ int write_chunk(CREC *cr, long long length, FILE *fout) {
 /* Check if two cooccurrence records are for the same two words, used for qsort */
 int compare_crec(const void *a, const void *b) {
     int c;
-    if ( (c = ((CREC *) a)->word1 - ((CREC *) b)->word1) != 0) return c;
-    else return (((CREC *) a)->word2 - ((CREC *) b)->word2);
+    if ( (c = ((CREC *) a)->word1 - ((CREC *) b)->word1) != 0) return c; //각 element의 word1을 비교, a가 앞(음), b가 앞(양)
+    else return (((CREC *) a)->word2 - ((CREC *) b)->word2); //word1이  같을 경우 word2를 비교, a가 앞(음), b가 앞(양)
     
 }
 
@@ -311,9 +311,9 @@ int get_cooccurrence() {
     char format[20], filename[200], str[MAX_STRING_LENGTH + 1];
     FILE *fid, *foverflow;
     real *bigram_table, r;
-    HASHREC *htmp, **vocab_hash = inithashtable();
-    CREC *cr = malloc(sizeof(CREC) * (overflow_length + 1));
-    history = malloc(sizeof(long long) * window_size);
+    HASHREC *htmp, **vocab_hash = inithashtable(); //초기화된 vocab 해시 테이블 생성
+    CREC *cr = malloc(sizeof(CREC) * (overflow_length + 1)); // CREC 배열은 길이가 overflow 길이+1
+    history = malloc(sizeof(long long) * window_size); 
     
     fprintf(stderr, "COUNTING COOCCURRENCES\n");
     if (verbose > 0) {
@@ -324,21 +324,25 @@ int get_cooccurrence() {
     if (verbose > 1) fprintf(stderr, "max product: %lld\n", max_product);
     if (verbose > 1) fprintf(stderr, "overflow length: %lld\n", overflow_length);
     sprintf(format,"%%%ds %%lld", MAX_STRING_LENGTH); // Format to read from vocab file, which has (irrelevant) frequency data
+                                                      // format = %%(MAX_STRING_LENGTH)s %%lld
     if (verbose > 1) fprintf(stderr, "Reading vocab from file \"%s\"...", vocab_file);
     fid = fopen(vocab_file,"r");
     if (fid == NULL) {fprintf(stderr,"Unable to open vocab file %s.\n",vocab_file); return 1;}
-    while (fscanf(fid, format, str, &id) != EOF) hashinsert(vocab_hash, str, ++j); // Here id is not used: inserting vocab words into hash table with their frequency rank, j
+    while (fscanf(fid, format, str, &id) != EOF) //format대로 str과 id 읽음(더이상 읽을게 없을 경우 EOF) 
+        hashinsert(vocab_hash, str, ++j); // Here id is not used: inserting vocab words into hash table with their frequency rank, j
+                                          // vocab_hash 테이블에 단어와 빈도수에 따른 랭킹을 저장(빈도에 대해 내림차순 정렬)
     fclose(fid);
     vocab_size = j;
     j = 0;
     if (verbose > 1) fprintf(stderr, "loaded %lld words.\nBuilding lookup table...", vocab_size);
     
     /* Build auxiliary lookup table used to index into bigram_table */
-    lookup = (long long *)calloc( vocab_size + 1, sizeof(long long) );
+    lookup = (long long *)calloc( vocab_size + 1, sizeof(long long) ); 
     if (lookup == NULL) {
         fprintf(stderr, "Couldn't allocate memory!");
         return 1;
     }
+    //테이블에 들어있는 element 수 계산
     lookup[0] = 1;
     for (a = 1; a <= vocab_size; a++) {
         if ((lookup[a] = max_product / a) < vocab_size) lookup[a] += lookup[a-1];
@@ -347,22 +351,22 @@ int get_cooccurrence() {
     if (verbose > 1) fprintf(stderr, "table contains %lld elements.\n",lookup[a-1]);
     
     /* Allocate memory for full array which will store all cooccurrence counts for words whose product of frequency ranks is less than max_product */
-    bigram_table = (real *)calloc( lookup[a-1] , sizeof(real) );
+    bigram_table = (real *)calloc( lookup[a-1] , sizeof(real) ); //element 수만큼 공간 할당
     if (bigram_table == NULL) {
         fprintf(stderr, "Couldn't allocate memory!");
         return 1;
     }
     
-    fid = stdin;
+    fid = stdin; //fid=text8
     // sprintf(format,"%%%ds",MAX_STRING_LENGTH);
-    sprintf(filename,"%s_%04d.bin", file_head, fidcounter);
+    sprintf(filename,"%s_%04d.bin", file_head, fidcounter); //fidcounter:초기값1
     foverflow = fopen(filename,"wb");
     if (verbose > 1) fprintf(stderr,"Processing token: 0");
     
     /* For each token in input stream, calculate a weighted cooccurrence sum within window_size */
     while (1) {
         if (ind >= overflow_length - window_size) { // If overflow buffer is (almost) full, sort it and write it to temporary file
-            qsort(cr, ind, sizeof(CREC), compare_crec);
+            qsort(cr, ind, sizeof(CREC), compare_crec); //index의 한계 값을 초과 => CREC 배열을 sort
             write_chunk(cr,ind,foverflow);
             fclose(foverflow);
             fidcounter++;
@@ -508,7 +512,7 @@ int main(int argc, char **argv) {
     
     /* The memory_limit determines a limit on the number of elements in bigram_table and the overflow buffer */
     /* Estimate the maximum value that max_product can take so that this limit is still satisfied */
-    rlimit = 0.85 * (real)memory_limit * 1073741824/(sizeof(CREC));
+    rlimit = 0.85 * (real)memory_limit * 1073741824/(sizeof(CREC)); //rlimit는 주어진 memory 용량 내에서 가질 수 있는 최대 CREC entry 수의 85%
     while (fabs(rlimit - n * (log(n) + 0.1544313298)) > 1e-3) n = rlimit / (log(n) + 0.1544313298);
     max_product = (long long) n;
     overflow_length = (long long) rlimit/6; // 0.85 + 1/6 ~= 1
